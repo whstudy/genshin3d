@@ -1,0 +1,292 @@
+<script setup lang="ts">
+  import * as THREE from 'three'
+  import Stats from 'three/addons/libs/stats.module.js'
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+  import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
+  import { MMDLoader } from 'three/addons/loaders/MMDLoader.js'
+  import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js'
+  import { ref } from 'vue'
+  import JSZip from "jszip";
+
+  let stats: any
+
+  let mesh, camera: any, scene: any, renderer, effect: any
+  let helper: any, ikHelper: any, physicsHelper: any
+  let oceanAmbientSound: any, AnimationAction: any, mixer: any
+
+  // 时间轴
+  const clock = new THREE.Clock()
+
+  // 物理动画
+  // @ts-ignore
+  Ammo().then(function (AmmoLib) {
+    // @ts-ignore
+    Ammo = AmmoLib
+    init()
+  })
+
+  async function init() {
+    const container = document.getElementById('info')
+    if (!container) {
+      return alert('加载失败！！！')
+    }
+    // document.body.appendChild(container)
+
+    //定义镜头
+    camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      3,
+      2000
+    )
+
+    camera.position.z = 30
+
+    // 舞台
+    scene = new THREE.Scene()
+
+    // 灯光
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1)
+    directionalLight.position.set(1, 1, 1).normalize()
+    scene.add(directionalLight)
+
+    // 绘制
+    renderer = new THREE.WebGLRenderer({ antialias: true })
+    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    container.appendChild(renderer.domElement)
+    effect = new OutlineEffect(renderer)
+
+    // STATS
+    stats = new Stats()
+    container.appendChild(stats.dom)
+
+    // 加载进度条
+    async function onProgress(xhr: any) {
+      if (xhr.lengthComputable) {
+        const percentComplete = (xhr.loaded / xhr.total) * 100
+        console.log(Math.round(percentComplete) + '% downloaded')
+      }
+    }
+
+    // const axesHelper = new THREE.AxesHelper(5)
+    // scene.add(axesHelper)
+
+    // 模型文件
+    // const modelFile = '../../public/丽莎/丽莎.pmx'
+    // const modelFile = './丽莎/丽莎.pmx'
+    // const modelFile = './夏洛蒂/夏洛蒂.pmx'
+    const modelFile = './琳妮特/琳妮特.pmx'
+    // const modelFile = './胡桃-海灯节/胡桃-海灯节.pmx'
+    // const modelFile = './神里绫华/神里绫华.pmx'
+    // const modelFile = '../../model/kizunaai/kafka.pmx'
+
+    // 动作文件
+    // const modelFile = '../../src/mmd/miku/miku_v2.pmd'
+    const vmdFiles = ['./Motion.vmd']
+
+    // 镜头文件
+    const cameraFiles = ['']
+    // const vmdFiles = ['../../src/mmd/vmds/wavefile_v2.vmd']
+
+    
+    // 动画辅助器
+    helper = new MMDAnimationHelper({
+      afterglow: 0,
+      // pmxAnimation: true
+    })
+
+    const loader = new MMDLoader()
+
+    // const loaderStore = new MMDLoader()
+
+    // loaderStore.load(
+    //   '../../model/gufengwutai/wt.pmx',
+    //   async function (mesh) {
+    //     mesh.position.y = 1
+    //     let materials1 = mesh.material as THREE.Material[] | THREE.Material
+    //     // 对每个材质进行处理
+    //     for (let i = 0; i < (materials1 as THREE.Material[]).length; i++) {
+    //       let material = materials1[i]
+    //       material.lightMap = material.map // 清除光照贴图
+    //       // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
+    //       material.lightMapIntensity = 5
+    //       material.shininess = 1000 // 设置自发光强度
+    //     }
+
+    //     let materials2 = mesh.material
+    //     for (let i = 0, il = materials2.length; i < il; i++) {
+    //       materials2[i].emissive.emissiveIntensity = 2
+    //     }
+
+    //     scene.add(mesh);
+    //   },
+    //   function (xhr) {
+    //     console.log((xhr.loaded / xhr.total * 100) + '% loadedstore');
+    //   },
+    //   function (error) {
+    //     console.log('An error happened', error);
+    //   }
+    // )
+
+    loader.loadWithAnimation(
+      modelFile,
+      vmdFiles,
+      async function (mmd: any) {
+        mesh = mmd.mesh
+        mesh.position.y = -10
+        // @ts-ignore
+        let materials = mesh.material as THREE.Material[] | THREE.Material
+        // 对每个材质进行处理
+        // @ts-ignore
+        for (let i = 0; i < (materials as THREE.Material[]).length; i++) {
+          let material = materials[i]
+          // 修改材质的光照属性
+          material.lightMap = material.map // 清除光照贴图
+          // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
+          material.lightMapIntensity = 3
+          material.shininess = 100 // 设置自发光强度
+        }
+
+        await helper.add(mesh, {
+          animation: mmd.animation,
+          physics: true
+        })
+
+        // loader.loadAnimation(cameraFiles, camera, function (cameraAnimation: any) {
+        //   helper.add(camera, {
+        //     animation: cameraAnimation
+        //   });
+        // }, onProgress, null)
+
+
+        /**
+         * 播放编辑好的关键帧数据
+         */
+        mixer = helper.objects.get( mesh ).mixer; //创建混合器
+        // AnimationAction = mixer.clipAction(mmd.animation); //返回动画操作对象
+        mixer.timeScale = 0;
+        // AnimationAction.play()
+
+        ikHelper = await helper.objects.get(mesh).ikSolver.createHelper()
+        ikHelper.visible = false
+        scene.add(ikHelper)
+
+        physicsHelper = await helper.objects.get(mesh).physics.createHelper()
+        physicsHelper.visible = false
+        scene.add(physicsHelper)
+
+        function onWindowResize() {
+          camera.aspect = window.innerWidth / window.innerHeight
+          camera.updateProjectionMatrix()
+          effect.setSize(window.innerWidth, window.innerHeight)
+        }
+        onWindowResize()
+
+        function animate() {
+          requestAnimationFrame(animate)
+          stats.begin()
+          render()
+          stats.end()
+        }
+        animate()
+        function render() {
+          helper.update(clock.getDelta())
+          effect.render(scene, camera)
+        }
+        scene.add(mesh)
+
+        // 初始化一个监听
+        const audioListener = new THREE.AudioListener();
+
+        // 把监听添加到camera
+        camera.add( audioListener );
+
+        // 初始化音频对象
+        oceanAmbientSound = new THREE.Audio( audioListener );
+
+        // 添加一个音频对象到场景中
+        scene.add( oceanAmbientSound );
+
+        // 加载资源
+        new THREE.AudioLoader().load(
+          // 资源URL
+          './Music.mp3',
+          // onLoad回调
+          function ( audioBuffer: any ) {
+            // 给一个加载器对象设置音频对象的缓存
+            oceanAmbientSound.setBuffer( audioBuffer );
+            oceanAmbientSound.setLoop(true); //是否循环
+            oceanAmbientSound.setVolume(1); //音量
+          },
+          // onProgress回调
+          function ( xhr: any ) {
+            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+          },
+
+          // onError回调
+          function ( err: any ) {
+            console.log( 'An error happened', err );
+          }
+        );
+      },
+
+      onProgress,
+      null
+    )
+
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true; // 启用阻尼效果（惯性效果）
+    controls.dampingFactor = 0.1; // 阻尼系数
+    controls.rotateSpeed = 2;      // 桌面端默认1.0，移动端建议0.3~0.7
+    controls.touchAction = 'pan-y';   // 避免页面滚动冲突
+    controls.minDistance = 10
+    controls.maxDistance = 100
+  }
+
+  let showPlay = ref(true)
+
+  const play = () => {
+    mixer.timeScale = 1; //开始播放
+    // 播放音频
+    oceanAmbientSound.play();
+    showPlay.value = false
+  }
+
+  const pause = () => {
+    mixer.timeScale = 0; //开始播放
+    // 播放音频
+    oceanAmbientSound.pause();
+    showPlay.value = true
+  }
+</script>
+
+<template>
+  <!-- <bgsound src="./Music.mp3" autostart="true" loop="true" /> -->
+  <!-- <embed id="music" src="./Music.mp3" type="audio/mp3" loop="true" /> -->
+  <!-- <audio id="music" controls loop="true" >
+    <source src="../Music.mp3" type="audio/mpeg">
+  </audio> -->
+  <div class="ctrl">
+    <button v-if="showPlay" @click="play">播放</button>
+    <button v-else @click="pause">暂停</button>
+  </div>
+  <div id="info" class="sss"></div>
+</template>
+
+<style scoped>
+.sss {
+  width: 100vw;
+  height: 100vh;
+  background-color: black;
+}
+#music {
+  position: absolute;
+  visibility: hidden;
+}
+.ctrl {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+</style>

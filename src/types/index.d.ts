@@ -1,0 +1,6 @@
+ declare module 'three'
+ declare module 'three/addons/libs/stats.module.js'
+ declare module 'three/addons/controls/OrbitControls.js'
+ declare module 'three/addons/effects/OutlineEffect.js'
+ declare module 'three/addons/loaders/MMDLoader.js'
+ declare module 'three/addons/animation/MMDAnimationHelper.js'
