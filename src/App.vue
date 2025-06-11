@@ -277,7 +277,7 @@
     showPlay.value = true
   }
   
-  const modelFileRef = ref('./布莱泽奥特曼/布莱泽有骨.pmx')
+  const modelFileRef = ref(modelFile)
   const changeMode = () => {
     // oceanAmbientSound.stop();
     // showPlay.value = true
