@@ -6,14 +6,15 @@
   import { MMDLoader } from 'three/addons/loaders/MMDLoader.js'
   import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js'
   import { ref } from 'vue'
-  import JSZip from "jszip";
 
   let stats: any
 
   let mesh, camera: any, scene: any, renderer, effect: any
   let helper: any, ikHelper: any, physicsHelper: any
-  let oceanAmbientSound: any, AnimationAction: any, mixer: any
-
+  let oceanAmbientSound: any, mixer: any
+  let modelFile: any
+  const progressTxt = ref(0)
+  const progressTxtShow =ref(true)
   // 时间轴
   const clock = new THREE.Clock()
 
@@ -25,10 +26,29 @@
     init()
   })
 
+  // 模型文件
+  // const modelFile = '../../public/丽莎/丽莎.pmx'
+  // const modelFile = './丽莎/丽莎.pmx'
+  // const modelFile = './夏洛蒂/夏洛蒂.pmx'
+  // modelFile = localStorage.getItem(`name`) || './布莱泽奥特曼/布莱泽有骨.pmx'
+  // const modelFile = './幽兰黛尔—完美假日/幽兰黛尔1.0.pmx'
+  // const modelFile = './巡天·英招-听风消夏/英招泳装.pmx'
+  // const modelFile = './薇蒂雅-龙舌兰 舞夜与焰/薇蒂雅-龙舌兰 舞夜与焰a1.0.pmx'
+  modelFile = localStorage.getItem(`name`) || './深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx'
+  // const modelFile = './深空之眼—伊邪那美泳装3.0/伊邪那美泳装2.0.pmx'
+  // const modelFile = './深空之眼—大国主泳装/大国主泳装.pmx'
+  // const modelFile = './爱莉希雅泳装/爱莉希雅泳装 1.0.pmx'
+  // const modelFile = './辰星-琼弦 慵倚花阴/辰星-琼弦 慵倚花阴a1.0.pmx'
+  // const modelFile = './胡桃-海灯节/胡桃-海灯节.pmx'
+  // const modelFile = './神里绫华/神里绫华.pmx'
+  // const modelFile = '../../model/kizunaai/kafka.pmx'
+
   async function init() {
-    const container = document.getElementById('info')
+    const container = document.getElementById('info') as HTMLElement
+    container.innerHTML = ''
     if (!container) {
-      return alert('加载失败！！！')
+      console.log('加载失败！！！')
+      return
     }
     // document.body.appendChild(container)
 
@@ -40,10 +60,11 @@
       2000
     )
 
-    camera.position.z = 30
+    camera.position.z = 60
 
     // 舞台
     scene = new THREE.Scene()
+    scene.children = []
 
     // 灯光
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1)
@@ -65,35 +86,31 @@
     async function onProgress(xhr: any) {
       if (xhr.lengthComputable) {
         const percentComplete = (xhr.loaded / xhr.total) * 100
-        console.log(Math.round(percentComplete) + '% downloaded')
+        console.log(Math.round(percentComplete))
+        progressTxt.value = Math.round(percentComplete)
+        if (progressTxt.value === 100) {
+          setTimeout(()=> {
+            progressTxtShow.value = false
+          }, 1000)
+        }
       }
     }
 
     // const axesHelper = new THREE.AxesHelper(5)
     // scene.add(axesHelper)
 
-    // 模型文件
-    // const modelFile = '../../public/丽莎/丽莎.pmx'
-    // const modelFile = './丽莎/丽莎.pmx'
-    // const modelFile = './夏洛蒂/夏洛蒂.pmx'
-    const modelFile = './琳妮特/琳妮特.pmx'
-    // const modelFile = './胡桃-海灯节/胡桃-海灯节.pmx'
-    // const modelFile = './神里绫华/神里绫华.pmx'
-    // const modelFile = '../../model/kizunaai/kafka.pmx'
-
     // 动作文件
     // const modelFile = '../../src/mmd/miku/miku_v2.pmd'
     const vmdFiles = ['./Motion.vmd']
 
     // 镜头文件
-    const cameraFiles = ['']
+    // const cameraFiles = ['']
     // const vmdFiles = ['../../src/mmd/vmds/wavefile_v2.vmd']
-
     
     // 动画辅助器
     helper = new MMDAnimationHelper({
       afterglow: 0,
-      // pmxAnimation: true
+      pmxAnimation: true
     })
 
     const loader = new MMDLoader()
@@ -189,11 +206,11 @@
           render()
           stats.end()
         }
-        animate()
         function render() {
           helper.update(clock.getDelta())
           effect.render(scene, camera)
         }
+        animate()
         scene.add(mesh)
 
         // 初始化一个监听
@@ -220,9 +237,9 @@
             oceanAmbientSound.setVolume(1); //音量
           },
           // onProgress回调
-          function ( xhr: any ) {
-            console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-          },
+          // function ( xhr: any ) {
+          //   console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+          // },
 
           // onError回调
           function ( err: any ) {
@@ -259,6 +276,16 @@
     oceanAmbientSound.pause();
     showPlay.value = true
   }
+  
+  const modelFileRef = ref('./布莱泽奥特曼/布莱泽有骨.pmx')
+  const changeMode = () => {
+    // oceanAmbientSound.stop();
+    // showPlay.value = true
+    // modelFile = modelFileRef.value
+    localStorage.setItem(`name`, modelFileRef.value)
+    location.reload()
+    // init()
+  }
 </script>
 
 <template>
@@ -268,9 +295,15 @@
     <source src="../Music.mp3" type="audio/mpeg">
   </audio> -->
   <div class="ctrl">
+    <select @change="changeMode" v-model="modelFileRef">
+      <option value="./布莱泽奥特曼/布莱泽有骨.pmx">杰杰的布莱泽</option>
+      <option value="./琳妮特/琳妮特.pmx">琳妮特</option>
+      <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option>
+    </select>
     <button v-if="showPlay" @click="play">播放</button>
     <button v-else @click="pause">暂停</button>
   </div>
+  <div v-if="progressTxtShow" class="progress">{{ progressTxt }}%</div>
   <div id="info" class="sss"></div>
 </template>
 
@@ -285,8 +318,30 @@
   visibility: hidden;
 }
 .ctrl {
+  display: flex;
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 10px;
+  right: 10px;
+}
+select {
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+  height: 30px;
+  border-radius: 3px;
+  font-size: 16px;
+}
+button {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  height: 30px;
+  border-radius: 3px;
+}
+.progress {
+  background: rgba(0, 0, 0, 0.582);
+  position: absolute;
+  top: 50%;
+  left: 50%;
 }
 </style>
