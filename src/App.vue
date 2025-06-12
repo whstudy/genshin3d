@@ -71,6 +71,7 @@
   // const modelFile = '../../model/kizunaai/kafka.pmx'
 
   const physicsOpenFlag = JSON.parse(localStorage.getItem('physicsOpenFlag') || `false`)
+  const showFlag = JSON.parse(localStorage.getItem('showFlag') || `false`)
 
   async function init() {
     const container = document.getElementById('info') as HTMLElement
@@ -83,7 +84,8 @@
 
     //定义镜头
     camera = new THREE.PerspectiveCamera(
-      45,
+      45,  
+      // 85,
       window.innerWidth / window.innerHeight,
       3,
       2000
@@ -96,14 +98,31 @@
     scene.children = []
 
     // 灯光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1)
-    directionalLight.position.set(1, 1, 1).normalize()
-    scene.add(directionalLight)
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 0.1)
+    // directionalLight.position.set(1, 1, 1).normalize()
+    // scene.add(directionalLight)
+
+    // 聚光灯
+    const spotLight = new THREE.SpotLight(0xffffff, 0.1)
+    spotLight.position.set(-40, 50, 30)
+    spotLight.castShadow = true;
+    scene.add(spotLight)
+
+    // 创建地面
+    // const planeGeometry = new THREE.PlaneGeometry(100, 100);
+    // plane.rotation.x = -90 * Math.PI / 180 // 地面 x轴 旋转-90度
+    const planeGeometry = new THREE.CylinderGeometry( 36, 36, 1, 100 );
+    const planeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.position.y = -10.6
+    plane.receiveShadow = true;
+    // scene.add(plane);
 
     // 绘制
     renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement)
     effect = new OutlineEffect(renderer)
 
@@ -199,17 +218,59 @@
       async function (mmd: any) {
         mesh = mmd.mesh
         mesh.position.y = -10
+        mesh.castShadow = true
+        // mesh.emissive = 0
         // @ts-ignore
         let materials = mesh.material as THREE.Material[] | THREE.Material
         // 对每个材质进行处理
         // @ts-ignore
         for (let i = 0; i < (materials as THREE.Material[]).length; i++) {
           let material = materials[i]
+
+          if (showFlag) {
+            if ([
+              `skirt`, 
+              `bag`, 
+              `bag_metal`, 
+              `cloth_aplha`, 
+              `cloth_alpha`, 
+              'waitao',
+              '兔子',
+              '花'
+            ].includes(material.name) || material.name.indexOf('充气') > -1) {
+              material.visible = false
+            }
+            if (modelFile.indexOf(`国常立`) === -1 && modelFile.indexOf(`爱莉希雅`) === -1 && modelFile.indexOf(`辰星-琼弦 慵倚花阴`) === -1) {
+              if ([
+                `背饰`, 
+                `背饰鱼`, 
+                `裙子`, 
+                `裙子1`, 
+                `衣边`, 
+                `裙饰`, 
+                `裙带`, 
+                `裙带1`,
+              ].includes(material.name)) {
+                material.visible = false
+              }
+            }
+            if (modelFile.indexOf(`龙舌兰`) > -1) {
+              if ([`前裙`, `腿部带`, `手环布`, '后裙的', '后裙', '腿带', '腿带+', '手环', '袖带', '衣饰1', '衣服'].includes(material.name)) {
+                material.visible = false
+              } 
+            }
+          }
+
+          if (i<6&&i>2) {
+            // material.visible = false
+          }
+          material.shininess = 100
+          material.matcapCombine = 100
           // 修改材质的光照属性
           material.lightMap = material.map // 清除光照贴图
-          // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
           material.lightMapIntensity = 3
           material.shininess = 100 // 设置自发光强度
+          // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
         }
 
         await helper.add(mesh, {
@@ -350,6 +411,11 @@
     localStorage.setItem(`physicsOpenFlag`, JSON.stringify(!physicsOpenFlag))
     location.reload()
   }
+
+  const changeShow = () => {
+    localStorage.setItem(`showFlag`, JSON.stringify(!showFlag))
+    location.reload()
+  }
 </script>
 
 <template>
@@ -368,6 +434,7 @@
   </select>
   <div class="ctrl">
     <button @click="physicsSwitch">{{!physicsOpenFlag ? `开启物理引擎` : `关闭物理引擎`}}</button>
+    <button @click="changeShow">{{showFlag ? `换装开` : `换装关`}}</button>
     <button v-if="showPlay" @click="play">播放</button>
     <button v-else @click="pause">暂停</button>
     <button @click="cameraScale">{{autoRotateRef ? `停转`: `旋转`}}</button>
@@ -388,9 +455,12 @@
 }
 .ctrl {
   display: flex;
+  align-items: end;
+  justify-content: end;
+  flex-wrap: wrap-reverse;
   position: absolute;
-  bottom: 10px;
-  right: 10px;
+  right: 0;
+  bottom: 0;
 }
 select {
   position: absolute;
@@ -410,7 +480,7 @@ button {
   font-size: 16px;
   height: 30px;
   border-radius: 3px;
-  margin-right: 6px;
+  margin: 3px;
 }
 .progress {
   background: rgba(0, 0, 0, 0.582);
