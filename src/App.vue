@@ -7,12 +7,39 @@
   import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js'
   import { ref } from 'vue'
 
+  const pmxList = [
+    `星穹铁道—男主`,
+    `星穹铁道—女主`,
+    `【深空之眼】幽月·塞勒涅-海滩漫步`,
+    `【深空之眼】曦光·阿尔忒弥斯-炫色夏虹`,
+    `刻晴`,
+    `哈迪斯泳装`,
+    `夏洛蒂`,
+    `英招泳装`,
+    `布莱泽奥特曼`,
+    `幽兰黛尔—完美假日`,
+    `深空之眼—伊邪那美泳装3.0`,
+    `深空之眼—国常立泳装`,
+    `深空之眼—大国主泳装`,
+    `深空之眼—波塞冬泳装2.0`,
+    `爱莉希雅泳装`,
+    `琳妮特`,
+    `甘雨泳装`,
+    `胡桃-海灯节`,
+    `胡桃泳装`,
+    `英招泳装清凉版`,
+    `薇蒂雅-龙舌兰 舞夜与焰`,
+    `辰星-琼弦 慵倚花阴`,
+    `钟离`,
+    `雷电将军泳装`,
+  ]
+  const pmxListFirstName = pmxList[0]
   let stats: any
 
-  let mesh, camera: any, scene: any, renderer, effect: any
+  let mesh: any, camera: any, scene: any, renderer, effect: any
   let helper: any, ikHelper: any, physicsHelper: any
   let oceanAmbientSound: any, mixer: any
-  let modelFile: any
+  let modelFile: any, controls: any
   const progressTxt = ref(0)
   const progressTxtShow =ref(true)
   // 时间轴
@@ -34,7 +61,7 @@
   // const modelFile = './幽兰黛尔—完美假日/幽兰黛尔1.0.pmx'
   // const modelFile = './巡天·英招-听风消夏/英招泳装.pmx'
   // const modelFile = './薇蒂雅-龙舌兰 舞夜与焰/薇蒂雅-龙舌兰 舞夜与焰a1.0.pmx'
-  modelFile = localStorage.getItem(`name`) || './深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx'
+  modelFile = localStorage.getItem(`name`) || `./${pmxListFirstName}/${pmxListFirstName}.pmx`
   // const modelFile = './深空之眼—伊邪那美泳装3.0/伊邪那美泳装2.0.pmx'
   // const modelFile = './深空之眼—大国主泳装/大国主泳装.pmx'
   // const modelFile = './爱莉希雅泳装/爱莉希雅泳装 1.0.pmx'
@@ -42,6 +69,8 @@
   // const modelFile = './胡桃-海灯节/胡桃-海灯节.pmx'
   // const modelFile = './神里绫华/神里绫华.pmx'
   // const modelFile = '../../model/kizunaai/kafka.pmx'
+
+  const physicsOpenFlag = JSON.parse(localStorage.getItem('physicsOpenFlag') || `false`)
 
   async function init() {
     const container = document.getElementById('info') as HTMLElement
@@ -146,6 +175,24 @@
     //   }
     // )
 
+    controls = new OrbitControls(camera, renderer.domElement)
+    controls.autoRotate = true; // 是否自动旋转
+    controls.autoRotateSpeed = 10
+    controls.enableDamping = true; // 启用阻尼效果（惯性效果）
+    controls.dampingFactor = 0.05; // 阻尼系数
+    controls.rotateSpeed = 2;      // 桌面端默认1.0，移动端建议0.3~0.7
+    controls.touchAction = 'pan-y';   // 避免页面滚动冲突
+
+    controls.keys = {
+        LEFT: 'ArrowLeft', //left arrow
+        UP: 'ArrowUp', // up arrow
+        RIGHT: 'ArrowRight', // right arrow
+        BOTTOM: 'ArrowDown' // down arrow
+    }
+
+    // controls.minDistance = 10
+    controls.maxDistance = 1000
+
     loader.loadWithAnimation(
       modelFile,
       vmdFiles,
@@ -167,7 +214,7 @@
 
         await helper.add(mesh, {
           animation: mmd.animation,
-          physics: true
+          physics: physicsOpenFlag
         })
 
         // loader.loadAnimation(cameraFiles, camera, function (cameraAnimation: any) {
@@ -189,9 +236,11 @@
         ikHelper.visible = false
         scene.add(ikHelper)
 
-        physicsHelper = await helper.objects.get(mesh).physics.createHelper()
-        physicsHelper.visible = false
-        scene.add(physicsHelper)
+        if (physicsOpenFlag) {
+          physicsHelper = await helper.objects.get(mesh).physics.createHelper()
+          physicsHelper.visible = false
+          scene.add(physicsHelper)
+        }
 
         function onWindowResize() {
           camera.aspect = window.innerWidth / window.innerHeight
@@ -202,6 +251,7 @@
 
         function animate() {
           requestAnimationFrame(animate)
+          controls.update(10);
           stats.begin()
           render()
           stats.end()
@@ -252,18 +302,21 @@
       null
     )
 
-    const controls = new OrbitControls(camera, renderer.domElement)
-    controls.enableDamping = true; // 启用阻尼效果（惯性效果）
-    controls.dampingFactor = 0.1; // 阻尼系数
-    controls.rotateSpeed = 2;      // 桌面端默认1.0，移动端建议0.3~0.7
-    controls.touchAction = 'pan-y';   // 避免页面滚动冲突
-    controls.minDistance = 10
-    controls.maxDistance = 100
   }
 
   let showPlay = ref(true)
 
-  const play = () => {
+  const play = async () => {
+
+    // await helper.add(mesh, {
+    //   animation: mmd.animation,
+    //   physics: true
+    // })
+
+    // physicsHelper = await helper.objects.get(mesh).physics.createHelper()
+    // physicsHelper.visible = false
+    // scene.add(physicsHelper)
+
     mixer.timeScale = 1; //开始播放
     // 播放音频
     oceanAmbientSound.play();
@@ -286,6 +339,17 @@
     location.reload()
     // init()
   }
+
+  let autoRotateRef = ref(true)
+  const cameraScale = () => {
+    autoRotateRef.value = !autoRotateRef.value
+    controls.autoRotate = !controls.autoRotate; // 是否自动旋转
+  }
+
+  const physicsSwitch = () => {
+    localStorage.setItem(`physicsOpenFlag`, JSON.stringify(!physicsOpenFlag))
+    location.reload()
+  }
 </script>
 
 <template>
@@ -294,14 +358,19 @@
   <!-- <audio id="music" controls loop="true" >
     <source src="../Music.mp3" type="audio/mpeg">
   </audio> -->
+  <select @change="changeMode" v-model="modelFileRef">
+    <template v-for="o in pmxList" v-key="o">
+      <option :value="`./${o}/${o}.pmx`">{{o}}</option>
+    </template>
+    <!-- <option value="./布莱泽奥特曼/布莱泽有骨.pmx">杰杰的布莱泽</option>
+    <option value="./琳妮特/琳妮特.pmx">琳妮特</option>
+    <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option> -->
+  </select>
   <div class="ctrl">
-    <select @change="changeMode" v-model="modelFileRef">
-      <option value="./布莱泽奥特曼/布莱泽有骨.pmx">杰杰的布莱泽</option>
-      <option value="./琳妮特/琳妮特.pmx">琳妮特</option>
-      <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option>
-    </select>
+    <button @click="physicsSwitch">{{!physicsOpenFlag ? `开启物理引擎` : `关闭物理引擎`}}</button>
     <button v-if="showPlay" @click="play">播放</button>
     <button v-else @click="pause">暂停</button>
+    <button @click="cameraScale">{{autoRotateRef ? `停转`: `旋转`}}</button>
   </div>
   <div v-if="progressTxtShow" class="progress">{{ progressTxt }}%</div>
   <div id="info" class="sss"></div>
@@ -320,10 +389,14 @@
 .ctrl {
   display: flex;
   position: absolute;
-  top: 10px;
+  bottom: 10px;
   right: 10px;
 }
 select {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 190px;
   display: flex;
   align-items: center;
   margin-right: 6px;
@@ -337,6 +410,7 @@ button {
   font-size: 16px;
   height: 30px;
   border-radius: 3px;
+  margin-right: 6px;
 }
 .progress {
   background: rgba(0, 0, 0, 0.582);
