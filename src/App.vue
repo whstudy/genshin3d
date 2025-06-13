@@ -228,23 +228,25 @@
           let material = materials[i]
 
           if (showFlag) {
-            if ([
-              `背饰`, 
-              '衣饰铁',
-              '吊饰',
-              '外套',
-              '外套2',
-              'metal',
-              `skirt`, 
-              `bag`, 
-              `bag_metal`, 
-              `cloth_aplha`, 
-              `cloth_alpha`, 
-              'waitao',
-              '兔子',
-              '花'
-            ].includes(material.name) || material.name.indexOf('充气') > -1) {
-              material.visible = false
+            if (modelFile.indexOf('星穹铁道') === -1) {
+              if ([
+                `背饰`, 
+                '衣饰铁',
+                '吊饰',
+                '外套',
+                '外套2',
+                'metal',
+                `skirt`, 
+                `bag`, 
+                `bag_metal`, 
+                `cloth_aplha`, 
+                `cloth_alpha`, 
+                'waitao',
+                '兔子',
+                '花'
+              ].includes(material.name) || material.name.indexOf('充气') > -1) {
+                material.visible = false
+              }
             }
             if (modelFile.indexOf(`国常立`) === -1 && modelFile.indexOf(`爱莉希雅`) === -1 && modelFile.indexOf(`辰星-琼弦 慵倚花阴`) === -1) {
               if ([
@@ -276,6 +278,11 @@
           material.lightMapIntensity = 3
           material.shininess = 100 // 设置自发光强度
           // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
+
+          material.transmission = 0.0, // 折射度，表示光线经过材料时的衰减程度
+          // clearcoat: 1,
+          // clearcoatRoughness: 0,
+          material.refractionRatio = 1.5 // 折射率，控制光的折射程度
         }
 
         await helper.add(mesh, {
