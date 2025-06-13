@@ -276,6 +276,9 @@
           // 修改材质的光照属性
           material.lightMap = material.map // 清除光照贴图
           material.lightMapIntensity = 3
+          if (modelFile.indexOf('完美假日') > -1 && material.name === '皮肤') {
+            material.lightMapIntensity = 5
+          }
           material.shininess = 100 // 设置自发光强度
           // material.emissive = new THREE.Color(0xffffff) // 设置自发光颜色
 
