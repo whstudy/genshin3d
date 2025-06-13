@@ -229,6 +229,12 @@
 
           if (showFlag) {
             if ([
+              `背饰`, 
+              '衣饰铁',
+              '吊饰',
+              '外套',
+              '外套2',
+              'metal',
               `skirt`, 
               `bag`, 
               `bag_metal`, 
@@ -242,7 +248,6 @@
             }
             if (modelFile.indexOf(`国常立`) === -1 && modelFile.indexOf(`爱莉希雅`) === -1 && modelFile.indexOf(`辰星-琼弦 慵倚花阴`) === -1) {
               if ([
-                `背饰`, 
                 `背饰鱼`, 
                 `裙子`, 
                 `裙子1`, 
