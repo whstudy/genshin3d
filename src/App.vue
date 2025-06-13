@@ -136,7 +136,7 @@
         const percentComplete = (xhr.loaded / xhr.total) * 100
         console.log(Math.round(percentComplete))
         progressTxt.value = Math.round(percentComplete)
-        if (progressTxt.value === 100) {
+        if (progressTxt.value >= 100) {
           setTimeout(()=> {
             progressTxtShow.value = false
           }, 1000)
@@ -392,7 +392,8 @@
     // physicsHelper = await helper.objects.get(mesh).physics.createHelper()
     // physicsHelper.visible = false
     // scene.add(physicsHelper)
-
+    controls.autoRotate = false
+    autoRotateRef.value = false
     mixer.timeScale = 1; //开始播放
     // 播放音频
     oceanAmbientSound.play();
