@@ -8,6 +8,7 @@
   import { ref } from 'vue'
 
   const pmxList = [
+    'TDA式改变洛天依-TID Blue Lolita.Ver',
     `星穹铁道—男主`,
     `星穹铁道—女主`,
     `【深空之眼】幽月·塞勒涅-海滩漫步`,
@@ -38,7 +39,8 @@
 
   let mesh: any, camera: any, scene: any, renderer, effect: any
   let helper: any, ikHelper: any, physicsHelper: any
-  let oceanAmbientSound: any, mixer: any
+  let mixer: any, AnimationAction: any
+  // oceanAmbientSound: any,
   let modelFile: any, controls: any
   const progressTxt = ref(0)
   const progressTxtShow =ref(true)
@@ -304,9 +306,13 @@
          * 播放编辑好的关键帧数据
          */
         mixer = helper.objects.get( mesh ).mixer; //创建混合器
-        // AnimationAction = mixer.clipAction(mmd.animation); //返回动画操作对象
-        mixer.timeScale = 0;
-        // AnimationAction.play()
+        AnimationAction = mixer.clipAction(mmd.animation); //返回动画操作对象
+        // mixer.timeScale = 0;
+        AnimationAction.clampWhenFinished = true;
+        // AnimationAction.time = 10; //操作对象设置开始播放时间
+        // mmd.animation.duration = AnimationAction.time;//剪辑对象设置播放结束时间
+        AnimationAction.play()
+        AnimationAction.paused = true;
 
         ikHelper = await helper.objects.get(mesh).ikSolver.createHelper()
         ikHelper.visible = false
@@ -339,39 +345,39 @@
         animate()
         scene.add(mesh)
 
-        // 初始化一个监听
-        const audioListener = new THREE.AudioListener();
+        // // 初始化一个监听
+        // const audioListener = new THREE.AudioListener();
 
-        // 把监听添加到camera
-        camera.add( audioListener );
+        // // 把监听添加到camera
+        // camera.add( audioListener );
 
-        // 初始化音频对象
-        oceanAmbientSound = new THREE.Audio( audioListener );
+        // // 初始化音频对象
+        // oceanAmbientSound = new THREE.Audio( audioListener );
 
-        // 添加一个音频对象到场景中
-        scene.add( oceanAmbientSound );
+        // // 添加一个音频对象到场景中
+        // scene.add( oceanAmbientSound );
 
-        // 加载资源
-        new THREE.AudioLoader().load(
-          // 资源URL
-          './Music.mp3',
-          // onLoad回调
-          function ( audioBuffer: any ) {
-            // 给一个加载器对象设置音频对象的缓存
-            oceanAmbientSound.setBuffer( audioBuffer );
-            oceanAmbientSound.setLoop(true); //是否循环
-            oceanAmbientSound.setVolume(1); //音量
-          },
-          // onProgress回调
-          // function ( xhr: any ) {
-          //   console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
-          // },
+        // // 加载资源
+        // new THREE.AudioLoader().load(
+        //   // 资源URL
+        //   './Music.mp3',
+        //   // onLoad回调
+        //   function ( audioBuffer: any ) {
+        //     // 给一个加载器对象设置音频对象的缓存
+        //     oceanAmbientSound.setBuffer( audioBuffer );
+        //     oceanAmbientSound.setLoop(true); //是否循环
+        //     oceanAmbientSound.setVolume(1); //音量
+        //   },
+        //   // onProgress回调
+        //   // function ( xhr: any ) {
+        //   //   console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+        //   // },
 
-          // onError回调
-          function ( err: any ) {
-            console.log( 'An error happened', err );
-          }
-        );
+        //   // onError回调
+        //   function ( err: any ) {
+        //     console.log( 'An error happened', err );
+        //   }
+        // );
       },
 
       onProgress,
@@ -382,28 +388,68 @@
 
   let showPlay = ref(true)
 
+
+
+// <audio id="myAudio" controls style="display: none">
+//   <source src="/i/audio/song.mp3" type="audio/mpeg">
+//   <source src="/i/audio/song.ogg" type="audio/ogg">
+//   您的浏览器不支持 audio 元素。
+// </audio><br><br>
+
+// <button onclick="getCurTime()" type="button">获取当前时间位置</button>
+// <button onclick="setCurTime()" type="button">将时间位置设置为 1 秒</button>
+
+// <script>
+// var x = document.getElementById("myAudio");
+// function getCurTime() { 
+//   alert(x.currentTime);
+// } 
+
+// function setCurTime() { 
+//   x.play()
+//   x.currentTime = 1;
+// } 
+
+  const currentTimeInput = ref(0)
+
+  const ratechange = async (e: any) => {
+    mixer.timeScale = e.target?.defaultPlaybackRate
+  }
+
+  const updateTime = async (e: any) => {
+    if (AnimationAction.paused || e.target?.currentTime < 1) {
+      AnimationAction.time = e.target?.currentTime
+    }
+  }
+
+  const toDuration = async () => {
+    const time = currentTimeInput.value
+    // @ts-ignore
+    document.getElementById("myAudio").currentTime = time
+    AnimationAction.time = time
+  }
+
   const play = async () => {
-
-    // await helper.add(mesh, {
-    //   animation: mmd.animation,
-    //   physics: true
-    // })
-
     // physicsHelper = await helper.objects.get(mesh).physics.createHelper()
     // physicsHelper.visible = false
     // scene.add(physicsHelper)
     controls.autoRotate = false
     autoRotateRef.value = false
-    mixer.timeScale = 1; //开始播放
+    // mixer.timeScale = 1; //开始播放
+    AnimationAction.paused = false
+    AnimationAction.play()
     // 播放音频
-    oceanAmbientSound.play();
+    // oceanAmbientSound.play();
+    // document.getElementById("myAudio").play()
     showPlay.value = false
   }
 
   const pause = () => {
-    mixer.timeScale = 0; //开始播放
+    // mixer.timeScale = 0; //开始播放
+    AnimationAction.paused = true
     // 播放音频
-    oceanAmbientSound.pause();
+    // oceanAmbientSound.pause();
+    // document.getElementById("myAudio").pause()
     showPlay.value = true
   }
   
@@ -449,10 +495,16 @@
     <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option> -->
   </select>
   <div class="ctrl">
+    <audio :loop="true" @ratechange="ratechange" @play="play" @pause="pause" @timeupdate="updateTime" src="./Music.mp3" id="myAudio" controls></audio>
+    <form @submit.prevent ="toDuration">
+      <input step="0.000000000000000001" type="number" v-model="currentTimeInput" placeholder="跳转时间"/>
+      <button @click="toDuration">跳转时间</button>
+    </form>
     <button @click="physicsSwitch">{{!physicsOpenFlag ? `开启物理引擎` : `关闭物理引擎`}}</button>
     <button @click="changeShow">{{showFlag ? `换装开` : `换装关`}}</button>
-    <button v-if="showPlay" @click="play">播放</button>
-    <button v-else @click="pause">暂停</button>
+    <!-- <button @click="toDuration">跳转</button> -->
+    <!-- <button v-if="showPlay" @click="play">播放</button>
+    <button v-else @click="pause">暂停</button> -->
     <button @click="cameraScale">{{autoRotateRef ? `停转`: `旋转`}}</button>
   </div>
   <div v-if="progressTxtShow" class="progress">{{ progressTxt }}%</div>
@@ -465,9 +517,10 @@
   height: 100vh;
   background-color: black;
 }
-#music {
-  position: absolute;
-  visibility: hidden;
+#myAudio {
+  width: 100vw
+  /* position: absolute; */
+  /* visibility: hidden; */
 }
 .ctrl {
   display: flex;
@@ -477,6 +530,9 @@
   position: absolute;
   right: 0;
   bottom: 0;
+  form {
+    display: flex;
+  }
 }
 select {
   position: absolute;
@@ -490,7 +546,8 @@ select {
   border-radius: 3px;
   font-size: 16px;
 }
-button {
+input, button {
+  border: none;
   display: flex;
   align-items: center;
   font-size: 16px;
