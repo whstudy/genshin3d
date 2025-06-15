@@ -6,6 +6,44 @@
   import { MMDLoader } from 'three/addons/loaders/MMDLoader.js'
   import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js'
   import { ref } from 'vue'
+  import { useLocalStorage } from './hook/useLocalStorage';
+
+  const vmdList = [
+    {
+      name: '兔子舞',
+      music: '兔子舞.mp3',
+      vmd: '兔子舞.vmd',
+    },
+    {
+      name: '热爱105℃的你',
+      music: '热爱105℃的你音频.mp3',
+      vmd: '热爱105℃的你.vmd',
+      noIk: true
+    },
+    {
+      name: 'stay tonight',
+      music: 'stay-tonight.mp3',
+      vmd: 'stay-tonight.vmd',
+      offset: 0.15
+    },
+    {
+      name: 'APT',
+      music: './apt/apt.mp3',
+      vmd: './apt/apt.vmd',
+    },
+    {
+      name: '爱你（长）',
+      music: '爱你（长）.mp3',
+      vmd: '爱你（长）.vmd',
+      noIk: true,
+    },
+    {
+      name: '爱你（短）',
+      music: '爱你（短）.mp3',
+      vmd: '爱你（短）.vmd',
+      noIk: false,
+    }
+  ]
 
   const pmxList = [
     'TDA式改变洛天依-TID Blue Lolita.Ver',
@@ -38,8 +76,9 @@
   let stats: any
 
   let mesh: any, camera: any, scene: any, renderer, effect: any
-  let helper: any, ikHelper: any, physicsHelper: any
-  let mixer: any, AnimationAction: any
+  let helper: any, physicsHelper: any
+  //  ikHelper: any,
+  let mixer: any, AnimationAction: any, autoRotateRef: any
   // oceanAmbientSound: any,
   let modelFile: any, controls: any
   const progressTxt = ref(0)
@@ -71,8 +110,10 @@
   // const modelFile = './胡桃-海灯节/胡桃-海灯节.pmx'
   // const modelFile = './神里绫华/神里绫华.pmx'
   // const modelFile = '../../model/kizunaai/kafka.pmx'
-
+  // const vmdFileRef = useLocalStorage('vmdObj', vmdFileRef.value || vmdList[0])
+  const vmdFileRef = ref(JSON.parse(localStorage.getItem('vmdObj') || JSON.stringify(vmdList[0])))
   const physicsOpenFlag = JSON.parse(localStorage.getItem('physicsOpenFlag') || `false`)
+  // const ikOpenFlag = useLocalStorage('ikOpenFlag', true)
   const showFlag = JSON.parse(localStorage.getItem('showFlag') || `false`)
 
   async function init() {
@@ -136,7 +177,7 @@
     async function onProgress(xhr: any) {
       if (xhr.lengthComputable) {
         const percentComplete = (xhr.loaded / xhr.total) * 100
-        console.log(Math.round(percentComplete))
+        // console.log(Math.round(percentComplete))
         progressTxt.value = Math.round(percentComplete)
         if (progressTxt.value >= 100) {
           setTimeout(()=> {
@@ -151,7 +192,8 @@
 
     // 动作文件
     // const modelFile = '../../src/mmd/miku/miku_v2.pmd'
-    const vmdFiles = ['./Motion.vmd']
+    // const vmdFiles = ['./Motion.vmd']
+    const vmdFiles = [`./${vmdFileRef.value.vmd}`]
 
     // 镜头文件
     // const cameraFiles = ['']
@@ -163,6 +205,10 @@
       pmxAnimation: true
     })
 
+    // helper.enable('ik', ikOpenFlag.value)
+    if (vmdFileRef.value.noIk) {
+      helper.enable('ik', false)
+    }
     const loader = new MMDLoader()
 
     // const loaderStore = new MMDLoader()
@@ -196,8 +242,9 @@
     //   }
     // )
 
+    autoRotateRef = useLocalStorage('autoRotateRef', true)
     controls = new OrbitControls(camera, renderer.domElement)
-    controls.autoRotate = true; // 是否自动旋转
+    controls.autoRotate = autoRotateRef.value; // 是否自动旋转
     controls.autoRotateSpeed = 10
     controls.enableDamping = true; // 启用阻尼效果（惯性效果）
     controls.dampingFactor = 0.05; // 阻尼系数
@@ -292,7 +339,7 @@
 
         await helper.add(mesh, {
           animation: mmd.animation,
-          physics: physicsOpenFlag
+          physics: physicsOpenFlag,
         })
 
         // loader.loadAnimation(cameraFiles, camera, function (cameraAnimation: any) {
@@ -314,9 +361,9 @@
         AnimationAction.play()
         AnimationAction.paused = true;
 
-        ikHelper = await helper.objects.get(mesh).ikSolver.createHelper()
-        ikHelper.visible = false
-        scene.add(ikHelper)
+        // ikHelper = await helper.objects.get(mesh).ikSolver.createHelper()
+        // ikHelper.visible = true
+        // scene.add(ikHelper)
 
         if (physicsOpenFlag) {
           physicsHelper = await helper.objects.get(mesh).physics.createHelper()
@@ -418,7 +465,7 @@
 
   const updateTime = async (e: any) => {
     if (AnimationAction.paused || e.target?.currentTime < 1) {
-      AnimationAction.time = e.target?.currentTime
+      AnimationAction.time = e.target?.currentTime - (vmdFileRef.value.offset || 0)
     }
   }
 
@@ -426,7 +473,7 @@
     const time = currentTimeInput.value
     // @ts-ignore
     document.getElementById("myAudio").currentTime = time
-    AnimationAction.time = time
+    AnimationAction.time = time - vmdFileRef.value.offset || 0
   }
 
   const play = async () => {
@@ -463,7 +510,6 @@
     // init()
   }
 
-  let autoRotateRef = ref(true)
   const cameraScale = () => {
     autoRotateRef.value = !autoRotateRef.value
     controls.autoRotate = !controls.autoRotate; // 是否自动旋转
@@ -474,8 +520,20 @@
     location.reload()
   }
 
+  // const ikSwitch = () => {
+  //   ikOpenFlag.value = !ikOpenFlag.value
+  //   helper.enable('ik', ikOpenFlag.value)
+  //   // localStorage.setItem(`physicsOpenFlag`, JSON.stringify(!physicsOpenFlag))
+  //   // location.reload()
+  // }
+
   const changeShow = () => {
     localStorage.setItem(`showFlag`, JSON.stringify(!showFlag))
+    location.reload()
+  }
+
+  const changeVmd = () => {
+    localStorage.setItem(`vmdObj`, JSON.stringify(vmdFileRef.value))
     location.reload()
   }
 </script>
@@ -486,21 +544,30 @@
   <!-- <audio id="music" controls loop="true" >
     <source src="../Music.mp3" type="audio/mpeg">
   </audio> -->
-  <select @change="changeMode" v-model="modelFileRef">
-    <template v-for="o in pmxList" v-key="o">
-      <option :value="`./${o}/${o}.pmx`">{{o}}</option>
-    </template>
-    <!-- <option value="./布莱泽奥特曼/布莱泽有骨.pmx">杰杰的布莱泽</option>
-    <option value="./琳妮特/琳妮特.pmx">琳妮特</option>
-    <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option> -->
-  </select>
+  <div class="select-div">
+    <select @change="changeMode" v-model="modelFileRef">
+      <template v-for="o in pmxList" v-key="o.name">
+        <option :value="`./${o}/${o}.pmx`">{{o}}</option>
+      </template>
+      <!-- <option value="./布莱泽奥特曼/布莱泽有骨.pmx">杰杰的布莱泽</option>
+      <option value="./琳妮特/琳妮特.pmx">琳妮特</option>
+      <option value="./深空之眼—波塞冬泳装2.0/波塞冬2.0.pmx">波塞冬2.0</option> -->
+    </select>
+    <select @change="changeVmd" v-model="vmdFileRef">
+      <template v-for="o in vmdList" v-key="o">
+        <option :value="o">{{o.name}}</option>
+      </template>
+    </select>
+  </div>
+
   <div class="ctrl">
-    <audio :loop="true" @ratechange="ratechange" @play="play" @pause="pause" @timeupdate="updateTime" src="./Music.mp3" id="myAudio" controls></audio>
+    <audio :loop="true" @ratechange="ratechange" @play="play" @pause="pause" @timeupdate="updateTime" :src="`./${vmdFileRef.music}`" id="myAudio" controls></audio>
     <form @submit.prevent ="toDuration">
       <input step="0.000000000000000001" type="number" v-model="currentTimeInput" placeholder="跳转时间"/>
       <button @click="toDuration">跳转时间</button>
     </form>
     <button @click="physicsSwitch">{{!physicsOpenFlag ? `开启物理引擎` : `关闭物理引擎`}}</button>
+    <!-- <button @click="ikSwitch">{{!ikOpenFlag ? `开启IK` : `关闭IK`}}</button> -->
     <button @click="changeShow">{{showFlag ? `换装开` : `换装关`}}</button>
     <!-- <button @click="toDuration">跳转</button> -->
     <!-- <button v-if="showPlay" @click="play">播放</button>
@@ -534,12 +601,14 @@
     display: flex;
   }
 }
-select {
+.select-div {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 190px;
   display: flex;
+}
+select {
+  width: 190px;
   align-items: center;
   margin-right: 6px;
   height: 30px;
