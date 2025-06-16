@@ -608,7 +608,7 @@
   display: flex;
 }
 select {
-  width: 190px;
+  width: 130px;
   align-items: center;
   margin-right: 6px;
   height: 30px;
