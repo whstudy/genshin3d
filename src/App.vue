@@ -5,8 +5,10 @@
   import { OutlineEffect } from 'three/addons/effects/OutlineEffect.js'
   import { MMDLoader } from 'three/addons/loaders/MMDLoader.js'
   import { MMDAnimationHelper } from 'three/addons/animation/MMDAnimationHelper.js'
-  import { ref } from 'vue'
-  import { useLocalStorage } from './hook/useLocalStorage';
+  import { ref, nextTick } from 'vue'
+  // import { useLocalStorage } from './hook/useLocalStorage';
+  import { useURLSearchParams } from './hook/useURLSearchParams';
+  
 
   const vmdList = [
     {
@@ -24,7 +26,7 @@
       name: 'stay tonight',
       music: 'stay-tonight.mp3',
       vmd: 'stay-tonight.vmd',
-      offset: 0.15
+      offset: -0.9
     },
     {
       name: 'APT',
@@ -111,10 +113,16 @@
   // const modelFile = './神里绫华/神里绫华.pmx'
   // const modelFile = '../../model/kizunaai/kafka.pmx'
   // const vmdFileRef = useLocalStorage('vmdObj', vmdFileRef.value || vmdList[0])
-  const vmdFileRef = ref(JSON.parse(localStorage.getItem('vmdObj') || JSON.stringify(vmdList[0])))
-  const physicsOpenFlag = JSON.parse(localStorage.getItem('physicsOpenFlag') || `false`)
+  // const vmdFileRef = ref(JSON.parse(localStorage.getItem('vmdObj') || JSON.stringify(vmdList[0])))
+
+  const vmdFileRef =  useURLSearchParams('vmdObj', vmdList[0])
+
+  const physicsOpenFlag = useURLSearchParams('physicsOpenFlag', false, true)
+
+  // const physicsOpenFlag = JSON.parse(localStorage.getItem('physicsOpenFlag') || `false`)
   // const ikOpenFlag = useLocalStorage('ikOpenFlag', true)
-  const showFlag = JSON.parse(localStorage.getItem('showFlag') || `false`)
+  // const showFlag = JSON.parse(localStorage.getItem('showFlag') || `false`)
+  const showFlag = useURLSearchParams('showFlag', false)
 
   async function init() {
     const container = document.getElementById('info') as HTMLElement
@@ -242,7 +250,9 @@
     //   }
     // )
 
-    autoRotateRef = useLocalStorage('autoRotateRef', true)
+    // autoRotateRef = useLocalStorage('autoRotateRef', true)
+    autoRotateRef = useURLSearchParams('autoRotateRef', true)
+
     controls = new OrbitControls(camera, renderer.domElement)
     controls.autoRotate = autoRotateRef.value; // 是否自动旋转
     controls.autoRotateSpeed = 10
@@ -276,7 +286,7 @@
         for (let i = 0; i < (materials as THREE.Material[]).length; i++) {
           let material = materials[i]
 
-          if (showFlag) {
+          if (showFlag.value) {
             if (modelFile.indexOf('星穹铁道') === -1) {
               if ([
                 `背饰`, 
@@ -339,7 +349,7 @@
 
         await helper.add(mesh, {
           animation: mmd.animation,
-          physics: physicsOpenFlag,
+          physics: physicsOpenFlag.value,
         })
 
         // loader.loadAnimation(cameraFiles, camera, function (cameraAnimation: any) {
@@ -365,7 +375,7 @@
         // ikHelper.visible = true
         // scene.add(ikHelper)
 
-        if (physicsOpenFlag) {
+        if (physicsOpenFlag.value) {
           physicsHelper = await helper.objects.get(mesh).physics.createHelper()
           physicsHelper.visible = false
           scene.add(physicsHelper)
@@ -516,8 +526,11 @@
   }
 
   const physicsSwitch = () => {
-    localStorage.setItem(`physicsOpenFlag`, JSON.stringify(!physicsOpenFlag))
-    location.reload()
+    physicsOpenFlag.value = !physicsOpenFlag.value
+    // localStorage.setItem(`physicsOpenFlag`, JSON.stringify(!physicsOpenFlag))
+    nextTick(() => {
+      location.reload()
+    })
   }
 
   // const ikSwitch = () => {
@@ -528,13 +541,22 @@
   // }
 
   const changeShow = () => {
-    localStorage.setItem(`showFlag`, JSON.stringify(!showFlag))
-    location.reload()
+    showFlag.value = !showFlag.value
+    // localStorage.setItem(`showFlag`, JSON.stringify(!showFlag))
+    nextTick(() => location.reload())
   }
 
   const changeVmd = () => {
-    localStorage.setItem(`vmdObj`, JSON.stringify(vmdFileRef.value))
+    // localStorage.setItem(`vmdObj`, JSON.stringify(vmdFileRef.value))
     location.reload()
+  }
+
+  const add = () => {
+    AnimationAction.time = AnimationAction.time + 0.1
+  }
+
+  const del = () => {
+    AnimationAction.time = AnimationAction.time - 0.1
   }
 </script>
 
@@ -566,6 +588,8 @@
       <input step="0.000000000000000001" type="number" v-model="currentTimeInput" placeholder="跳转时间"/>
       <button @click="toDuration">跳转时间</button>
     </form>
+    <button @click="add">加</button>
+    <button @click="del">减</button>
     <button @click="physicsSwitch">{{!physicsOpenFlag ? `开启物理引擎` : `关闭物理引擎`}}</button>
     <!-- <button @click="ikSwitch">{{!ikOpenFlag ? `开启IK` : `关闭IK`}}</button> -->
     <button @click="changeShow">{{showFlag ? `换装开` : `换装关`}}</button>
