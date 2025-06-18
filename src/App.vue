@@ -12,6 +12,46 @@
 
   const vmdList = [
     {
+      name: '7rings',
+      music: '7rings.mp3',
+      vmd: '7rings.vmd',
+    },
+    {
+      name: 'Señorita',
+      music: 'Señorita.mp3',
+      vmd: 'Señorita.vmd',
+    },
+    {
+      name: 'Phut_hon_motion_1',
+      music: 'Phut hon_motion_v1.1.mp3',
+      vmd: 'Phut_hon_motion_1.vmd',
+      // noIk: true,
+    },
+    {
+      name: 'Phut_hon_motion_2',
+      music: 'Phut hon_motion_v1.1.mp3',
+      vmd: 'Phut_hon_motion_2.vmd',
+      // noIk: true,
+    },
+    {
+      name: 'Phut hon_motion_v1.1',
+      music: 'Phut hon_motion_v1.1.mp3',
+      vmd: 'Phut Phut_hon_motion_3.1.vmd',
+      // noIk: true,
+    },
+    {
+      name: 'Phut hon_motion_v1.1',
+      music: 'Phut hon_motion_v1.1.mp3',
+      vmd: 'Phut Phut_hon_motion_0.1.vmd',
+      // noIk: true,
+    },
+    {
+      name: '笑容',
+      music: '还是你的笑容最可爱.mp3',
+      vmd: '还是你的笑容最可爱.vmd',
+      noIk: true,
+    },
+    {
       name: '兔子舞',
       music: '兔子舞.mp3',
       vmd: '兔子舞.vmd',
@@ -73,6 +113,7 @@
     `辰星-琼弦 慵倚花阴`,
     `钟离`,
     `雷电将军泳装`,
+    '奶牛女仆装',
   ]
   const pmxListFirstName = pmxList[0]
   let stats: any
